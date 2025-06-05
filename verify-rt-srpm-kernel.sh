@@ -1,7 +1,6 @@
 #!/bin/bash
 #
-# Script to verify RT kernel installation and test real-time capabilities
-# This script should be run after installing the RT kernel
+# Script to verify RT kernel built from SRPM installation and test real-time capabilities
 
 set -e  # Exit on error
 
@@ -26,14 +25,6 @@ function echo_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Function to check if command exists
-function check_command() {
-    if ! command -v $1 &> /dev/null; then
-        echo_error "$1 is not installed. Please install it and try again."
-        exit 1
-    fi
-}
-
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then
     echo_error "This script must be run as root or with sudo."
@@ -50,12 +41,9 @@ echo_status "Checking kernel version..."
 KERNEL_VERSION=$(uname -r)
 echo "Current kernel: $KERNEL_VERSION"
 
-# Check if kernel has RT capabilities
-# First try to check the kernel version string
+# Check if kernel has RT capabilities by looking for .rt suffix
 if echo $KERNEL_VERSION | grep -q "rt"; then
     echo_status "RT kernel detected by version string: $KERNEL_VERSION"
-elif echo $KERNEL_VERSION | grep -q "rt-custom"; then
-    echo_status "Custom RT kernel detected by version string: $KERNEL_VERSION"
 else
     # If not found in version string, check kernel config
     if [ -f "/boot/config-$(uname -r)" ]; then
@@ -95,7 +83,7 @@ if [ -f "/sys/kernel/debug/sched_features" ]; then
 else
     echo_warning "Scheduler features file not found. Debug filesystem might not be mounted."
     echo_status "Mounting debugfs..."
-    sudo mount -t debugfs none /sys/kernel/debug 2>/dev/null || true
+    mount -t debugfs none /sys/kernel/debug 2>/dev/null || true
     
     if [ -f "/sys/kernel/debug/sched_features" ]; then
         echo "Scheduler features:"
@@ -119,7 +107,6 @@ if [ -f "/boot/config-$(uname -r)" ]; then
     echo "RCU_BOOST: $(grep CONFIG_RCU_BOOST $CONFIG_FILE || echo 'Not found')"
     echo "RCU_BOOST_DELAY: $(grep CONFIG_RCU_BOOST_DELAY $CONFIG_FILE || echo 'Not found')"
     echo "RCU_NOCB_CPU: $(grep CONFIG_RCU_NOCB_CPU $CONFIG_FILE || echo 'Not found')"
-    echo "RCU_NOCB_CPU_CB_BOOST: $(grep CONFIG_RCU_NOCB_CPU_CB_BOOST $CONFIG_FILE || echo 'Not found')"
     
     # Check AWS-specific configurations
     echo_status "Checking AWS-specific configurations..."
@@ -132,8 +119,24 @@ if [ -f "/boot/config-$(uname -r)" ]; then
     echo_status "Checking if AWS drivers are loaded..."
     if lsmod | grep -q ena; then
         echo "ENA driver: Loaded"
+        # Check if network interfaces are using ENA driver
+        if ip link show | grep -i ena > /dev/null; then
+            echo_status "ENA network interfaces detected and active"
+            ip link show | grep -i ena
+        else
+            echo_warning "ENA driver is loaded but no ENA network interfaces detected"
+        fi
     else
         echo_warning "ENA driver: Not loaded - this may cause network issues!"
+        
+        # Check if ENA module exists
+        if [ -f "/lib/modules/$(uname -r)/kernel/drivers/net/ethernet/amazon/ena/ena.ko" ]; then
+            echo_status "ENA module exists but is not loaded. Try loading it manually:"
+            echo_status "sudo modprobe ena"
+        else
+            echo_error "ENA module not found in kernel modules directory!"
+            echo_error "This suggests the kernel was not built with ENA support."
+        fi
     fi
     
     if lsmod | grep -q nvme; then
@@ -147,7 +150,7 @@ fi
 
 # Check for rt-tests package
 echo_status "Checking for rt-tests package..."
-if ! check_command cyclictest 2>/dev/null; then
+if ! command -v cyclictest &> /dev/null; then
     echo_warning "rt-tests package not installed. Skipping latency tests."
     echo_warning "To install rt-tests, you may need to build it from source:"
     echo_warning "git clone https://git.kernel.org/pub/scm/utils/rt-tests/rt-tests.git"
@@ -165,7 +168,7 @@ if [ $SKIP_LATENCY_TESTS -eq 0 ]; then
     echo "Lower values indicate better real-time performance."
     echo
 
-    sudo cyclictest -l 100000 -m -n -p 80 -t 4 -D 10
+    cyclictest -l 100000 -m -n -p 80 -t 4 -D 10
 else
     echo_status "Skipping latency tests due to missing rt-tests package."
 fi
@@ -180,20 +183,20 @@ if [ $SKIP_LATENCY_TESTS -eq 0 ]; then
     if command -v stress-ng &> /dev/null; then
         echo "Starting background load..."
         # Create background load
-        sudo stress-ng --cpu 2 --io 1 --vm 1 --vm-bytes 128M --timeout 35s &
+        stress-ng --cpu 2 --io 1 --vm 1 --vm-bytes 128M --timeout 35s &
         STRESS_PID=$!
 
         # Wait for stress to start
         sleep 5
 
         # Run cyclictest with background load
-        sudo cyclictest -l 1000000 -m -n -p 80 -t 4 -D 30
+        cyclictest -l 1000000 -m -n -p 80 -t 4 -D 30
 
         # Make sure stress has finished
         wait $STRESS_PID 2>/dev/null || true
     else
         echo_warning "stress-ng not installed. Running cyclictest without background load."
-        sudo cyclictest -l 1000000 -m -n -p 80 -t 4 -D 30
+        cyclictest -l 1000000 -m -n -p 80 -t 4 -D 30
     fi
 fi
 
@@ -208,8 +211,6 @@ echo "Kernel version: $KERNEL_VERSION"
 # Check if kernel has RT capabilities
 if echo $KERNEL_VERSION | grep -q "rt"; then
     echo "RT kernel (by version string): YES"
-elif echo $KERNEL_VERSION | grep -q "rt-custom"; then
-    echo "Custom RT kernel (by version string): YES"
 elif [ -f "/boot/config-$(uname -r)" ] && grep -q "CONFIG_PREEMPT_RT=y" "/boot/config-$(uname -r)"; then
     echo "RT kernel (by config): YES"
 else
@@ -249,8 +250,18 @@ if [ -f "/boot/config-$(uname -r)" ]; then
     
     if lsmod | grep -q ena; then
         echo "ENA driver loaded: YES"
+        if ip link show | grep -i ena > /dev/null; then
+            echo "ENA network interfaces: ACTIVE"
+        else
+            echo "ENA network interfaces: NOT DETECTED (driver loaded but no interfaces using it)"
+        fi
     else
         echo "ENA driver loaded: NO (network may not function properly)"
+        if [ -f "/lib/modules/$(uname -r)/kernel/drivers/net/ethernet/amazon/ena/ena.ko" ]; then
+            echo "ENA module exists: YES (can be loaded with 'sudo modprobe ena')"
+        else
+            echo "ENA module exists: NO (kernel may not have ENA support)"
+        fi
     fi
     
     # Check RCU configurations in summary

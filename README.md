@@ -7,7 +7,6 @@ This guide provides step-by-step instructions for building and installing a Linu
 - [Introduction](#introduction)
 - [Prerequisites](#prerequisites)
 - [Build Environment Setup](#build-environment-setup)
-- [Kernel Source](#kernel-source)
 - [Building the RT Kernel](#building-the-rt-kernel)
 - [Installing the RT Kernel](#installing-the-rt-kernel)
 - [Testing and Verification](#testing-and-verification)
@@ -51,82 +50,26 @@ sudo dnf update -y
 sudo dnf install -y git bc gcc gcc-c++ make ncurses-devel openssl-devel elfutils-libelf-devel bison flex dwarves rpm-build perl
 ```
 
-## Kernel Source
-
-For this guide, we'll use Linux kernel version 6.12.32, which natively supports the PREEMPT option without requiring a separate RT patch.
-
-### 1. Download Kernel Source
-
-```bash
-mkdir -p ~/rt-kernel-build
-cd ~/rt-kernel-build
-wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.12.32.tar.xz
-tar xf linux-6.12.32.tar.xz
-cd linux-6.12.32
-```
-
 ## Building the RT Kernel
 
-### 1. Configure Kernel
+### Using the Amazon Linux Source RPM (Recommended for EC2)
 
-Start with the Amazon Linux 2023 kernel configuration as a base:
+This approach is recommended for EC2 instances as it ensures all Amazon-specific drivers and configurations are properly included.
 
-```bash
-# Copy the current kernel config as a starting point
-sudo cp /boot/config-$(uname -r) .config
-
-# Update the configuration for the new kernel version
-make olddefconfig
-
-# Enable RT preemption
-scripts/config --enable HIGH_RES_TIMERS
-scripts/config --enable PREEMPT
-scripts/config --disable PREEMPT_VOLUNTARY
-scripts/config --disable PREEMPT_NONE
-scripts/config --enable PREEMPT_RT
-
-# Set custom kernel name with -rt-custom suffix
-scripts/config --set-str LOCALVERSION "-rt-custom"
-
-# Set timer frequency to 1000 Hz for better real-time performance
-scripts/config --set-val CONFIG_HZ 1000
-
-# Configure RCU subsystem for real-time performance
-scripts/config --enable RCU_BOOST            # Enable RCU priority boosting
-scripts/config --set-val RCU_BOOST_DELAY 500 # Milliseconds to delay boosting
-scripts/config --enable RCU_NOCB_CPU         # Offload RCU callbacks from boot-selected CPUs
-scripts/config --enable RCU_NOCB_CPU_CB_BOOST # Process callbacks with real-time priority
-
-# AWS-specific configurations for EC2 compatibility
-scripts/config --enable ENA_ETHERNET  # Elastic Network Adapter support
-scripts/config --enable BLK_DEV_NVME  # NVMe storage support
-scripts/config --enable KVM_GUEST     # KVM guest support
-# ... and other AWS-specific configurations
-
-# Optional: Make additional configuration changes
-make menuconfig
-```
-
-> **Important Note for EC2 Instances**: When building a custom kernel for AWS EC2 instances, it's critical to include AWS-specific drivers and configurations, especially for networking (ENA) and storage (NVMe). Without these, your EC2 instance may fail to boot properly or lose network connectivity. Our build script automatically enables these essential configurations.
-
-### 2. Build the Kernel
+#### 1. Run the Build Script
 
 ```bash
-# The script automatically detects the number of cores on your system
-# You can also specify the number of cores manually with the --cores parameter
-./build-rt-kernel.sh --cores=8  # Use 8 cores for compilation
-
-# Or let the script auto-detect the number of cores
-./build-rt-kernel.sh
-
-# The script will:
-# - Build the kernel and modules
-# - Build binary kernel RPM packages (no git repository required)
-# - Automatically transfer and install the packages on the remote host
+./build-rt-kernel-from-srpm.sh
 ```
 
+This script will:
+1. Enable the Amazon Linux source repository
+2. Download the kernel6.12 source RPM
+3. Modify the spec file and config files to enable PREEMPT_RT
+4. Build the kernel with RT support
+5. Create RPM packages in `~/rt-kernel-rpms/`
 
-The build process will create several RPM packages in the `~/rt-kernel-build/kernel-rpms` directory, then automatically transfer and install them on the remote host.
+The advantage of this approach is that it uses Amazon's official kernel source that already has all their patches and configurations, including proper support for the ENA driver and other EC2-specific features.
 
 ## Installing the RT Kernel
 
@@ -180,6 +123,22 @@ grep -i "rt" /proc/version
 # Check for RT-specific features
 cat /sys/kernel/realtime
 ```
+
+### Automated Verification
+
+We provide a verification script to check if the RT kernel is properly installed and configured:
+
+```bash
+# For kernels built from Amazon Linux source RPM
+sudo ./verify-rt-srpm-kernel.sh
+```
+
+This script will:
+1. Check if the running kernel has RT capabilities
+2. Verify that critical RT configurations are enabled
+3. Check for AWS-specific drivers (ENA, NVMe)
+4. Run latency tests if rt-tests package is installed
+5. Provide a summary of the kernel configuration
 
 ### Running RT Tests
 
@@ -235,4 +194,3 @@ For optimal RT performance:
 3. Set real-time priority for processes:
    ```bash
    chrt -f 99 your_rt_application
-   ```
