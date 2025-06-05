@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Script to verify RT kernel installation and test real-time capabilities
-# This script should be run on the remote host after installing the RT kernel
+# This script should be run after installing the RT kernel
 
 set -e  # Exit on error
 
@@ -123,8 +123,7 @@ if [ -f "/boot/config-$(uname -r)" ]; then
     
     # Check AWS-specific configurations
     echo_status "Checking AWS-specific configurations..."
-    echo "ENA_ETHERNET: $(grep CONFIG_ENA_ETHERNET $CONFIG_FILE || echo 'Not found')"
-    echo "ENA: $(grep CONFIG_ENA $CONFIG_FILE || echo 'Not found')"
+    echo "AMAZON_ENA_ETHERNET: $(grep CONFIG_AMAZON_ENA_ETHERNET $CONFIG_FILE || echo 'Not found')"
     echo "NVME: $(grep CONFIG_BLK_DEV_NVME $CONFIG_FILE || echo 'Not found')"
     echo "KVM_GUEST: $(grep CONFIG_KVM_GUEST $CONFIG_FILE || echo 'Not found')"
     echo "HYPERV_GUEST: $(grep CONFIG_HYPERV_GUEST $CONFIG_FILE || echo 'Not found')"
@@ -230,7 +229,7 @@ if [ -f "/boot/config-$(uname -r)" ]; then
     # Check AWS-specific configurations in summary
     echo
     echo "AWS EC2 Compatibility:"
-    if grep -q "CONFIG_ENA_ETHERNET=y" "/boot/config-$(uname -r)"; then
+    if grep -q "CONFIG_AMAZON_ENA_ETHERNET=m" "/boot/config-$(uname -r)" || grep -q "CONFIG_AMAZON_ENA_ETHERNET=y" "/boot/config-$(uname -r)"; then
         echo "ENA Ethernet support: YES"
     else
         echo "ENA Ethernet support: NO (may cause network issues)"

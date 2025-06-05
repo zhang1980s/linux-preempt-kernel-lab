@@ -8,9 +8,6 @@ set -e  # Exit on error
 # Configuration variables - adjust as needed
 KERNEL_VERSION="6.12.32"
 BUILD_DIR="$HOME/rt-kernel-build"
-REMOTE_HOST="rt-kernel.zzhe.xyz"
-SSH_KEY="/home/admin/myspace/keys/keypair-sandbox0-sin-mymac.pem"
-REMOTE_USER="ec2-user"
 
 # Color codes for output
 GREEN='\033[0;32m'
@@ -129,8 +126,7 @@ echo_status "Configuring RCU subsystem for real-time performance..."
 # Enable AWS-specific configurations
 echo_status "Enabling AWS-specific configurations..."
 # Elastic Network Adapter (ENA) support - essential for EC2 networking
-./scripts/config --enable ENA_ETHERNET
-./scripts/config --module ENA
+./scripts/config --module AMAZON_ENA_ETHERNET
 
 # NVMe support for AWS storage
 ./scripts/config --enable NVME_CORE
@@ -159,8 +155,8 @@ echo_status "Enabling AWS-specific configurations..."
 
 # Verify critical AWS configurations
 echo_status "Verifying AWS-specific configurations..."
-if ! grep -q "CONFIG_ENA_ETHERNET=y" .config; then
-    echo_warning "ENA Ethernet support is not enabled! This may cause network issues on EC2."
+if ! grep -q "CONFIG_AMAZON_ENA_ETHERNET=m" .config && ! grep -q "CONFIG_AMAZON_ENA_ETHERNET=y" .config; then
+    echo_warning "Amazon ENA Ethernet support is not enabled! This may cause network issues on EC2."
 fi
 if ! grep -q "CONFIG_BLK_DEV_NVME=y" .config; then
     echo_warning "NVMe support is not enabled! This may cause storage issues on EC2."
@@ -224,42 +220,15 @@ else
     exit 1
 fi
 
-# Automatically transfer and install packages
 echo
 echo_status "Build process completed successfully!"
+echo_status "RPM packages are available in: $BUILD_DIR/kernel-rpms/"
 echo
-
-# Transfer RPM packages to remote host
-echo_status "Transferring RPM packages to $REMOTE_HOST..."
-scp -i $SSH_KEY kernel-rpms/kernel-*.rpm $REMOTE_USER@$REMOTE_HOST:~/
-
-# Install packages on remote host
-echo_status "Installing kernel on remote host..."
-ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo dnf install -y ~/kernel-*.rpm"
-
-# Update GRUB configuration
-echo_status "Updating GRUB configuration on remote host..."
-ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo grub2-mkconfig -o /boot/grub2/grub.cfg"
-
-# Set new kernel as default
-echo_status "Setting new kernel as default on remote host..."
-ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo grubby --set-default /boot/vmlinuz-${KERNEL_VERSION}-rt-custom"
-
+echo_status "To install the kernel locally, run:"
+echo_status "sudo dnf install -y $BUILD_DIR/kernel-rpms/kernel-*.rpm"
+echo_status "sudo grub2-mkconfig -o /boot/grub2/grub.cfg"
+echo_status "sudo grubby --set-default /boot/vmlinuz-${KERNEL_VERSION}-rt-custom"
 echo
-echo_status "Kernel installation completed successfully!"
-echo_status "You can now reboot the remote host to use the new kernel."
-echo_status "To reboot, run: ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'sudo reboot'"
-echo
-
-# Ask if user wants to reboot remote host
-read -p "Do you want to reboot the remote host now? (y/n): " reboot_choice
-if [ "$reboot_choice" == "y" ] || [ "$reboot_choice" == "Y" ]; then
-    echo_status "Rebooting remote host..."
-    ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'sudo reboot'
-    echo_status "Remote host is rebooting. Wait a few minutes before reconnecting."
-else
-    echo_status "Skipping reboot. Remember to reboot the remote host to use the new kernel."
-fi
-
+echo_status "After installation, reboot your system to use the new kernel."
 echo
 echo_status "Script completed successfully!"
