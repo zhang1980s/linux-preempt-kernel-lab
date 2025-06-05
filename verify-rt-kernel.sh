@@ -111,6 +111,27 @@ if [ -f "/boot/config-$(uname -r)" ]; then
     echo "HIGH_RES_TIMERS: $(grep CONFIG_HIGH_RES_TIMERS $CONFIG_FILE || echo 'Not found')"
     echo "NO_HZ_FULL: $(grep CONFIG_NO_HZ_FULL $CONFIG_FILE || echo 'Not found')"
     echo "HZ: $(grep CONFIG_HZ= $CONFIG_FILE || echo 'Not found')"
+    
+    # Check AWS-specific configurations
+    echo_status "Checking AWS-specific configurations..."
+    echo "ENA_ETHERNET: $(grep CONFIG_ENA_ETHERNET $CONFIG_FILE || echo 'Not found')"
+    echo "ENA: $(grep CONFIG_ENA $CONFIG_FILE || echo 'Not found')"
+    echo "NVME: $(grep CONFIG_BLK_DEV_NVME $CONFIG_FILE || echo 'Not found')"
+    echo "XEN: $(grep CONFIG_XEN= $CONFIG_FILE || echo 'Not found')"
+    
+    # Check if critical AWS drivers are loaded
+    echo_status "Checking if AWS drivers are loaded..."
+    if lsmod | grep -q ena; then
+        echo "ENA driver: Loaded"
+    else
+        echo_warning "ENA driver: Not loaded - this may cause network issues!"
+    fi
+    
+    if lsmod | grep -q nvme; then
+        echo "NVMe driver: Loaded"
+    else
+        echo_warning "NVMe driver: Not loaded - this may cause storage issues!"
+    fi
 else
     echo_warning "Kernel config file not found."
 fi
@@ -192,6 +213,27 @@ if [ -f "/boot/config-$(uname -r)" ]; then
         echo "Timer frequency set to 1000 Hz: YES"
     else
         echo "Timer frequency set to 1000 Hz: NO (current: $HZ_VALUE Hz)"
+    fi
+    
+    # Check AWS-specific configurations in summary
+    echo
+    echo "AWS EC2 Compatibility:"
+    if grep -q "CONFIG_ENA_ETHERNET=y" "/boot/config-$(uname -r)"; then
+        echo "ENA Ethernet support: YES"
+    else
+        echo "ENA Ethernet support: NO (may cause network issues)"
+    fi
+    
+    if grep -q "CONFIG_BLK_DEV_NVME=y" "/boot/config-$(uname -r)"; then
+        echo "NVMe storage support: YES"
+    else
+        echo "NVMe storage support: NO (may cause storage issues)"
+    fi
+    
+    if lsmod | grep -q ena; then
+        echo "ENA driver loaded: YES"
+    else
+        echo "ENA driver loaded: NO (network may not function properly)"
     fi
 fi
 

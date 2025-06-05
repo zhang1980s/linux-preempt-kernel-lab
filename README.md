@@ -88,9 +88,17 @@ scripts/config --enable PREEMPT_RT
 # Set timer frequency to 1000 Hz for better real-time performance
 scripts/config --set-val CONFIG_HZ 1000
 
+# AWS-specific configurations for EC2 compatibility
+scripts/config --enable ENA_ETHERNET  # Elastic Network Adapter support
+scripts/config --enable BLK_DEV_NVME  # NVMe storage support
+scripts/config --enable XEN           # Xen hypervisor support
+# ... and other AWS-specific configurations
+
 # Optional: Make additional configuration changes
 make menuconfig
 ```
+
+> **Important Note for EC2 Instances**: When building a custom kernel for AWS EC2 instances, it's critical to include AWS-specific drivers and configurations, especially for networking (ENA) and storage (NVMe). Without these, your EC2 instance may fail to boot properly or lose network connectivity. Our build script automatically enables these essential configurations.
 
 ### 2. Build the Kernel
 

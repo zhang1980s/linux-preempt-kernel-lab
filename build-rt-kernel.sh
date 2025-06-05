@@ -112,6 +112,42 @@ echo_status "Enabling RT preemption options..."
 echo_status "Setting timer frequency to 1000 Hz..."
 ./scripts/config --set-val CONFIG_HZ 1000
 
+# Enable AWS-specific configurations
+echo_status "Enabling AWS-specific configurations..."
+# Elastic Network Adapter (ENA) support - essential for EC2 networking
+./scripts/config --enable ENA_ETHERNET
+./scripts/config --module ENA
+
+# NVMe support for AWS storage
+./scripts/config --enable NVME_CORE
+./scripts/config --enable BLK_DEV_NVME
+
+# Xen support (for Xen-based EC2 instances)
+./scripts/config --enable XEN
+./scripts/config --enable XEN_PV
+./scripts/config --enable XEN_HVM
+./scripts/config --enable XEN_PVHVM
+
+# AWS NitroV2 support
+./scripts/config --enable PCI_HYPERV_INTERFACE
+
+# ACPI and other hardware support
+./scripts/config --enable ACPI
+./scripts/config --enable ACPI_EC_DEBUGFS
+./scripts/config --enable ACPI_BGRT
+
+# Cloud-init related
+./scripts/config --enable RANDOM_TRUST_CPU
+
+# Verify critical AWS configurations
+echo_status "Verifying AWS-specific configurations..."
+if ! grep -q "CONFIG_ENA_ETHERNET=y" .config; then
+    echo_warning "ENA Ethernet support is not enabled! This may cause network issues on EC2."
+fi
+if ! grep -q "CONFIG_BLK_DEV_NVME=y" .config; then
+    echo_warning "NVMe support is not enabled! This may cause storage issues on EC2."
+fi
+
 # Parse command line arguments
 MENUCONFIG=false
 CORES_ARG=""
