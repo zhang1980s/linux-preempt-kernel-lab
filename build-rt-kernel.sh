@@ -152,12 +152,25 @@ echo_status "Building binary RPM packages..."
 make -j$CORES binrpm-pkg
 
 # Check if RPM packages were created
-cd ..
-if ls kernel-*.rpm 1> /dev/null 2>&1; then
+RPM_DIR="rpmbuild/RPMS/x86_64"
+if [ -d "$RPM_DIR" ] && ls $RPM_DIR/kernel-*.rpm 1> /dev/null 2>&1; then
     echo_status "RPM packages created successfully:"
-    ls -la kernel-*.rpm
+    ls -la $RPM_DIR/kernel-*.rpm
+    
+    # Copy RPM packages to parent directory and rename with preempt prefix
+    echo_status "Copying and renaming RPM packages with preempt prefix..."
+    cd ..
+    mkdir -p preempt-rpms
+    for rpm in linux-$KERNEL_VERSION/$RPM_DIR/kernel-*.rpm; do
+        base_name=$(basename $rpm)
+        new_name="preempt-${base_name}"
+        cp $rpm preempt-rpms/$new_name
+    done
+    echo_status "Renamed RPM packages:"
+    ls -la preempt-rpms/
 else
     echo_error "Failed to create RPM packages!"
+    cd ..
     exit 1
 fi
 
@@ -174,12 +187,12 @@ read -p "Enter your choice (1 or 2): " choice
 
 if [ "$choice" == "1" ]; then
     # Transfer RPM packages to remote host
-    echo_status "Transferring RPM packages to $REMOTE_HOST..."
-    scp -i $SSH_KEY kernel-*.rpm $REMOTE_USER@$REMOTE_HOST:~/
+    echo_status "Transferring preempt RPM packages to $REMOTE_HOST..."
+    scp -i $SSH_KEY preempt-rpms/preempt-*.rpm $REMOTE_USER@$REMOTE_HOST:~/
     
     # Install packages on remote host
-    echo_status "Installing kernel on remote host..."
-    ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo dnf install -y ~/kernel*.rpm"
+    echo_status "Installing preempt kernel on remote host..."
+    ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo dnf install -y ~/preempt-*.rpm"
     
     # Update GRUB configuration
     echo_status "Updating GRUB configuration on remote host..."
