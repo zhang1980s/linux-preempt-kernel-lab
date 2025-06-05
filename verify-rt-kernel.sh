@@ -117,7 +117,8 @@ if [ -f "/boot/config-$(uname -r)" ]; then
     echo "ENA_ETHERNET: $(grep CONFIG_ENA_ETHERNET $CONFIG_FILE || echo 'Not found')"
     echo "ENA: $(grep CONFIG_ENA $CONFIG_FILE || echo 'Not found')"
     echo "NVME: $(grep CONFIG_BLK_DEV_NVME $CONFIG_FILE || echo 'Not found')"
-    echo "XEN: $(grep CONFIG_XEN= $CONFIG_FILE || echo 'Not found')"
+    echo "KVM_GUEST: $(grep CONFIG_KVM_GUEST $CONFIG_FILE || echo 'Not found')"
+    echo "HYPERV_GUEST: $(grep CONFIG_HYPERV_GUEST $CONFIG_FILE || echo 'Not found')"
     
     # Check if critical AWS drivers are loaded
     echo_status "Checking if AWS drivers are loaded..."
@@ -228,6 +229,12 @@ if [ -f "/boot/config-$(uname -r)" ]; then
         echo "NVMe storage support: YES"
     else
         echo "NVMe storage support: NO (may cause storage issues)"
+    fi
+    
+    if grep -q "CONFIG_KVM_GUEST=y" "/boot/config-$(uname -r)"; then
+        echo "KVM guest support: YES"
+    else
+        echo "KVM guest support: NO (may cause virtualization issues)"
     fi
     
     if lsmod | grep -q ena; then

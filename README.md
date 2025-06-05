@@ -91,7 +91,7 @@ scripts/config --set-val CONFIG_HZ 1000
 # AWS-specific configurations for EC2 compatibility
 scripts/config --enable ENA_ETHERNET  # Elastic Network Adapter support
 scripts/config --enable BLK_DEV_NVME  # NVMe storage support
-scripts/config --enable XEN           # Xen hypervisor support
+scripts/config --enable KVM_GUEST     # KVM guest support
 # ... and other AWS-specific configurations
 
 # Optional: Make additional configuration changes

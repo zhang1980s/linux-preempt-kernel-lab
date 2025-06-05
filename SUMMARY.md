@@ -25,7 +25,7 @@ The project provides a complete solution for building a real-time kernel on Amaz
 
 - Uses Linux kernel version 6.12.32, which natively supports the PREEMPT_RT option
 - Configures timer frequency to 1000 Hz for better real-time performance
-- Includes AWS-specific configurations for EC2 compatibility (ENA networking, NVMe storage, etc.)
+- Includes AWS-specific configurations for EC2 compatibility (ENA networking, NVMe storage, KVM guest support)
 - Automatically detects and utilizes available CPU cores on both local and remote systems for optimal compilation performance
 - Builds RPM packages for easy installation on Amazon Linux 2023
 - Includes comprehensive testing and verification tools

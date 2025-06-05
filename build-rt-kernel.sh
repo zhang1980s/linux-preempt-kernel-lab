@@ -122,11 +122,9 @@ echo_status "Enabling AWS-specific configurations..."
 ./scripts/config --enable NVME_CORE
 ./scripts/config --enable BLK_DEV_NVME
 
-# Xen support (for Xen-based EC2 instances)
-./scripts/config --enable XEN
-./scripts/config --enable XEN_PV
-./scripts/config --enable XEN_HVM
-./scripts/config --enable XEN_PVHVM
+# KVM support (for KVM-based EC2 instances)
+./scripts/config --enable KVM_GUEST
+./scripts/config --enable HYPERV_GUEST
 
 # AWS NitroV2 support
 ./scripts/config --enable PCI_HYPERV_INTERFACE
@@ -138,6 +136,12 @@ echo_status "Enabling AWS-specific configurations..."
 
 # Cloud-init related
 ./scripts/config --enable RANDOM_TRUST_CPU
+
+# Disable Xen support as it's not needed
+./scripts/config --disable XEN
+./scripts/config --disable XEN_PV
+./scripts/config --disable XEN_HVM
+./scripts/config --disable XEN_PVHVM
 
 # Verify critical AWS configurations
 echo_status "Verifying AWS-specific configurations..."
