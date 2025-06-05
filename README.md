@@ -105,29 +105,32 @@ make menuconfig
 # The script will:
 # - Build the kernel and modules
 # - Build binary kernel RPM packages (no git repository required)
+# - Automatically transfer and install the packages on the remote host
 ```
 
 
-The build process will create several RPM packages with a "preempt-" prefix in the `~/rt-kernel-build/preempt-rpms` directory.
+The build process will create several RPM packages in the `~/rt-kernel-build/kernel-rpms` directory, then automatically transfer and install them on the remote host.
 
 ## Installing the RT Kernel
 
-### 1. Transfer RPM Packages to Remote EC2 Instance
+The build script automatically handles the installation process:
+
+1. Transfers the RPM packages to the remote host
+2. Installs the packages on the remote host
+3. Updates the GRUB configuration
+4. Sets the new kernel as default
+5. Prompts to reboot the remote host
+
+If you need to manually install the kernel, you can use these commands:
 
 ```bash
+# Transfer packages
 cd ~/rt-kernel-build
-scp -i /path/to/your/ssh/key.pem preempt-rpms/preempt-*.rpm ec2-user@your-remote-host:~/
-```
+scp -i /path/to/your/ssh/key.pem kernel-rpms/kernel-*.rpm ec2-user@your-remote-host:~/
 
-### 2. Install the Kernel on Remote EC2 Instance
-
-SSH into the remote instance and install the kernel packages:
-
-```bash
+# Install packages on the remote host
 ssh -i /path/to/your/ssh/key.pem ec2-user@your-remote-host
-
-# On the remote instance:
-sudo dnf install -y ~/preempt-*.rpm
+sudo dnf install -y ~/kernel-*.rpm
 ```
 
 ### 3. Update GRUB Configuration

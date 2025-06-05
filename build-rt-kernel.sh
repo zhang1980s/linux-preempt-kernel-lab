@@ -157,69 +157,54 @@ if [ -d "$RPM_DIR" ] && ls $RPM_DIR/kernel-*.rpm 1> /dev/null 2>&1; then
     echo_status "RPM packages created successfully:"
     ls -la $RPM_DIR/kernel-*.rpm
     
-    # Copy RPM packages to parent directory and rename with preempt prefix
-    echo_status "Copying and renaming RPM packages with preempt prefix..."
+    # Copy RPM packages to parent directory
+    echo_status "Copying RPM packages to parent directory..."
     cd ..
-    mkdir -p preempt-rpms
-    for rpm in linux-$KERNEL_VERSION/$RPM_DIR/kernel-*.rpm; do
-        base_name=$(basename $rpm)
-        new_name="preempt-${base_name}"
-        cp $rpm preempt-rpms/$new_name
-    done
-    echo_status "Renamed RPM packages:"
-    ls -la preempt-rpms/
+    mkdir -p kernel-rpms
+    cp linux-$KERNEL_VERSION/$RPM_DIR/kernel-*.rpm kernel-rpms/
+    echo_status "Copied RPM packages:"
+    ls -la kernel-rpms/
 else
     echo_error "Failed to create RPM packages!"
     cd ..
     exit 1
 fi
 
-# Ask if user wants to transfer and install packages
+# Automatically transfer and install packages
 echo
 echo_status "Build process completed successfully!"
 echo
-echo "The following options are available:"
-echo "1. Transfer RPM packages to remote host and install"
-echo "2. Exit without transferring packages"
+
+# Transfer RPM packages to remote host
+echo_status "Transferring RPM packages to $REMOTE_HOST..."
+scp -i $SSH_KEY kernel-rpms/kernel-*.rpm $REMOTE_USER@$REMOTE_HOST:~/
+
+# Install packages on remote host
+echo_status "Installing kernel on remote host..."
+ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo dnf install -y ~/kernel-*.rpm"
+
+# Update GRUB configuration
+echo_status "Updating GRUB configuration on remote host..."
+ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo grub2-mkconfig -o /boot/grub2/grub.cfg"
+
+# Set new kernel as default
+echo_status "Setting new kernel as default on remote host..."
+ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo grubby --set-default /boot/vmlinuz-$KERNEL_VERSION"
+
+echo
+echo_status "Kernel installation completed successfully!"
+echo_status "You can now reboot the remote host to use the new kernel."
+echo_status "To reboot, run: ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'sudo reboot'"
 echo
 
-read -p "Enter your choice (1 or 2): " choice
-
-if [ "$choice" == "1" ]; then
-    # Transfer RPM packages to remote host
-    echo_status "Transferring preempt RPM packages to $REMOTE_HOST..."
-    scp -i $SSH_KEY preempt-rpms/preempt-*.rpm $REMOTE_USER@$REMOTE_HOST:~/
-    
-    # Install packages on remote host
-    echo_status "Installing preempt kernel on remote host..."
-    ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo dnf install -y ~/preempt-*.rpm"
-    
-    # Update GRUB configuration
-    echo_status "Updating GRUB configuration on remote host..."
-    ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo grub2-mkconfig -o /boot/grub2/grub.cfg"
-    
-    # Set new kernel as default
-    echo_status "Setting new kernel as default on remote host..."
-    ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo grubby --set-default /boot/vmlinuz-$KERNEL_VERSION"
-    
-    echo
-    echo_status "Kernel installation completed successfully!"
-    echo_status "You can now reboot the remote host to use the new kernel."
-    echo_status "To reboot, run: ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'sudo reboot'"
-    echo
-    
-    # Ask if user wants to reboot remote host
-    read -p "Do you want to reboot the remote host now? (y/n): " reboot_choice
-    if [ "$reboot_choice" == "y" ] || [ "$reboot_choice" == "Y" ]; then
-        echo_status "Rebooting remote host..."
-        ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'sudo reboot'
-        echo_status "Remote host is rebooting. Wait a few minutes before reconnecting."
-    else
-        echo_status "Skipping reboot. Remember to reboot the remote host to use the new kernel."
-    fi
+# Ask if user wants to reboot remote host
+read -p "Do you want to reboot the remote host now? (y/n): " reboot_choice
+if [ "$reboot_choice" == "y" ] || [ "$reboot_choice" == "Y" ]; then
+    echo_status "Rebooting remote host..."
+    ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST 'sudo reboot'
+    echo_status "Remote host is rebooting. Wait a few minutes before reconnecting."
 else
-    echo_status "Exiting without transferring packages."
-    echo_status "You can manually transfer and install the packages later using the commands in the README.md file."
+    echo_status "Skipping reboot. Remember to reboot the remote host to use the new kernel."
 fi
 
 echo
