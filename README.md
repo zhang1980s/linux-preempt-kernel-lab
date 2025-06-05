@@ -107,7 +107,6 @@ make menuconfig
 # - Build the kernel RPM packages
 ```
 
-When using the copy-and-execute-remote.sh script, it will automatically detect the number of CPU cores on the remote system and pass this information to the build script for optimal compilation performance.
 
 The build process will create several RPM packages in the parent directory (`~/rt-kernel-build`).
 
@@ -117,7 +116,7 @@ The build process will create several RPM packages in the parent directory (`~/r
 
 ```bash
 cd ~/rt-kernel-build
-scp -i /home/admin/myspace/keys/keypair-sandbox0-sin-mymac.pem *.rpm ec2-user@rt-kernel.zzhe.xyz:~/
+scp -i /path/to/your/ssh/key.pem *.rpm ec2-user@your-remote-host:~/
 ```
 
 ### 2. Install the Kernel on Remote EC2 Instance
@@ -125,7 +124,7 @@ scp -i /home/admin/myspace/keys/keypair-sandbox0-sin-mymac.pem *.rpm ec2-user@rt
 SSH into the remote instance and install the kernel packages:
 
 ```bash
-ssh -i /home/admin/myspace/keys/keypair-sandbox0-sin-mymac.pem ec2-user@rt-kernel.zzhe.xyz
+ssh -i /path/to/your/ssh/key.pem ec2-user@your-remote-host
 
 # On the remote instance:
 sudo dnf install -y ~/kernel*.rpm

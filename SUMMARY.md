@@ -39,14 +39,7 @@ The project provides a complete solution for building a real-time kernel on Amaz
    
    This script will guide you through the build process and offer to transfer and install the kernel on your remote EC2 instance.
 
-2. **Copy and execute the build script on the remote server**:
-   ```bash
-   ./copy-and-execute-remote.sh
-   ```
-   
-   This script will copy the build script to the remote server and execute it there.
-
-3. **After installation and reboot, verify the RT kernel**:
+2. **After installation and reboot, verify the RT kernel**:
    ```bash
    # On the remote EC2 instance
    sudo ./verify-rt-kernel.sh
@@ -56,11 +49,11 @@ The project provides a complete solution for building a real-time kernel on Amaz
 
 ## Remote EC2 Instance
 
-The scripts are configured to work with a remote EC2 instance with the hostname `rt-kernel.zzhe.xyz`. You can modify the following variables in `build-rt-kernel.sh` to match your environment:
+The scripts are configured to work with a remote EC2 instance. You can modify the following variables in `build-rt-kernel.sh` to match your environment:
 
 ```bash
-REMOTE_HOST="rt-kernel.zzhe.xyz"
-SSH_KEY="/home/admin/myspace/keys/keypair-sandbox0-sin-mymac.pem"
+REMOTE_HOST="your-remote-host"
+SSH_KEY="/path/to/your/ssh/key.pem"
 REMOTE_USER="ec2-user"
 ```
 
