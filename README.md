@@ -48,7 +48,7 @@ The following steps will be performed on the local build environment.
 
 ```bash
 sudo dnf update -y
-sudo dnf install -y git bc gcc gcc-c++ make ncurses-devel openssl-devel elfutils-libelf-devel bison flex dwarves rpm-build
+sudo dnf install -y git bc gcc gcc-c++ make ncurses-devel openssl-devel elfutils-libelf-devel bison flex dwarves rpm-build perl
 ```
 
 ## Kernel Source

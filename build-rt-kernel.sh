@@ -45,7 +45,7 @@ function check_command() {
 echo_status "Installing required packages..."
 sudo dnf update -y
 sudo dnf install -y git bc gcc gcc-c++ make ncurses-devel openssl-devel \
-    elfutils-libelf-devel bison flex dwarves rpm-build wget tar patch
+    elfutils-libelf-devel bison flex dwarves rpm-build wget tar patch perl
 
 # Check for required commands
 echo_status "Checking for required commands..."
