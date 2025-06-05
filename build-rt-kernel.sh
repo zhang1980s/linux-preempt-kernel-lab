@@ -147,9 +147,9 @@ else
 fi
 make -j$CORES
 
-# Build RPM packages
-echo_status "Building RPM packages..."
-make -j$CORES rpm-pkg
+# Build binary RPM packages (doesn't require git repository)
+echo_status "Building binary RPM packages..."
+make -j$CORES binrpm-pkg
 
 # Check if RPM packages were created
 cd ..

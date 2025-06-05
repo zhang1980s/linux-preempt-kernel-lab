@@ -104,7 +104,7 @@ make menuconfig
 
 # The script will:
 # - Build the kernel and modules
-# - Build the kernel RPM packages
+# - Build binary kernel RPM packages (no git repository required)
 ```
 
 

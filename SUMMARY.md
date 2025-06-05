@@ -13,7 +13,7 @@ The project provides a complete solution for building a real-time kernel on Amaz
 2. **build-rt-kernel.sh** - Automated script that handles the entire kernel build process:
    - Downloads the Linux kernel source (version 6.12.32)
    - Configures the kernel with PREEMPT_RT support
-   - Builds the kernel and creates RPM packages
+   - Builds the kernel and creates binary RPM packages (no git repository required)
    - Optionally transfers and installs the packages on a remote EC2 instance
 
 3. **verify-rt-kernel.sh** - Script to verify the RT kernel installation and test real-time capabilities:
