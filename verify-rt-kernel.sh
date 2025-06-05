@@ -54,6 +54,8 @@ echo "Current kernel: $KERNEL_VERSION"
 # First try to check the kernel version string
 if echo $KERNEL_VERSION | grep -q "rt"; then
     echo_status "RT kernel detected by version string: $KERNEL_VERSION"
+elif echo $KERNEL_VERSION | grep -q "rt-custom"; then
+    echo_status "Custom RT kernel detected by version string: $KERNEL_VERSION"
 else
     # If not found in version string, check kernel config
     if [ -f "/boot/config-$(uname -r)" ]; then
@@ -207,6 +209,8 @@ echo "Kernel version: $KERNEL_VERSION"
 # Check if kernel has RT capabilities
 if echo $KERNEL_VERSION | grep -q "rt"; then
     echo "RT kernel (by version string): YES"
+elif echo $KERNEL_VERSION | grep -q "rt-custom"; then
+    echo "Custom RT kernel (by version string): YES"
 elif [ -f "/boot/config-$(uname -r)" ] && grep -q "CONFIG_PREEMPT_RT=y" "/boot/config-$(uname -r)"; then
     echo "RT kernel (by config): YES"
 else

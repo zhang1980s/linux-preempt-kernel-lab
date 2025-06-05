@@ -108,6 +108,10 @@ echo_status "Enabling RT preemption options..."
 ./scripts/config --disable PREEMPT_NONE
 ./scripts/config --enable PREEMPT_RT
 
+# Set custom kernel name with -rt-custom suffix
+echo_status "Setting custom kernel name with -rt-custom suffix..."
+./scripts/config --set-str LOCALVERSION "-rt-custom"
+
 # Set timer frequency to 1000 Hz
 echo_status "Setting timer frequency to 1000 Hz..."
 ./scripts/config --set-val CONFIG_HZ 1000
@@ -239,7 +243,7 @@ ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo grub2-mkconfig -o /boot/grub2/gr
 
 # Set new kernel as default
 echo_status "Setting new kernel as default on remote host..."
-ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo grubby --set-default /boot/vmlinuz-$KERNEL_VERSION"
+ssh -i $SSH_KEY $REMOTE_USER@$REMOTE_HOST "sudo grubby --set-default /boot/vmlinuz-${KERNEL_VERSION}-rt-custom"
 
 echo
 echo_status "Kernel installation completed successfully!"

@@ -85,6 +85,9 @@ scripts/config --disable PREEMPT_VOLUNTARY
 scripts/config --disable PREEMPT_NONE
 scripts/config --enable PREEMPT_RT
 
+# Set custom kernel name with -rt-custom suffix
+scripts/config --set-str LOCALVERSION "-rt-custom"
+
 # Set timer frequency to 1000 Hz for better real-time performance
 scripts/config --set-val CONFIG_HZ 1000
 
