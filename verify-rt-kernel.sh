@@ -112,6 +112,13 @@ if [ -f "/boot/config-$(uname -r)" ]; then
     echo "NO_HZ_FULL: $(grep CONFIG_NO_HZ_FULL $CONFIG_FILE || echo 'Not found')"
     echo "HZ: $(grep CONFIG_HZ= $CONFIG_FILE || echo 'Not found')"
     
+    # Check RCU configurations
+    echo_status "Checking RCU configurations..."
+    echo "RCU_BOOST: $(grep CONFIG_RCU_BOOST $CONFIG_FILE || echo 'Not found')"
+    echo "RCU_BOOST_DELAY: $(grep CONFIG_RCU_BOOST_DELAY $CONFIG_FILE || echo 'Not found')"
+    echo "RCU_NOCB_CPU: $(grep CONFIG_RCU_NOCB_CPU $CONFIG_FILE || echo 'Not found')"
+    echo "RCU_NOCB_CPU_CB_BOOST: $(grep CONFIG_RCU_NOCB_CPU_CB_BOOST $CONFIG_FILE || echo 'Not found')"
+    
     # Check AWS-specific configurations
     echo_status "Checking AWS-specific configurations..."
     echo "ENA_ETHERNET: $(grep CONFIG_ENA_ETHERNET $CONFIG_FILE || echo 'Not found')"
@@ -241,6 +248,21 @@ if [ -f "/boot/config-$(uname -r)" ]; then
         echo "ENA driver loaded: YES"
     else
         echo "ENA driver loaded: NO (network may not function properly)"
+    fi
+    
+    # Check RCU configurations in summary
+    echo
+    echo "RCU Configuration for Real-time Performance:"
+    if grep -q "CONFIG_RCU_BOOST=y" "/boot/config-$(uname -r)"; then
+        echo "RCU priority boosting: YES"
+    else
+        echo "RCU priority boosting: NO (may cause priority inversion issues)"
+    fi
+    
+    if grep -q "CONFIG_RCU_NOCB_CPU=y" "/boot/config-$(uname -r)"; then
+        echo "RCU callback offloading: YES"
+    else
+        echo "RCU callback offloading: NO (may cause latency spikes)"
     fi
 fi
 

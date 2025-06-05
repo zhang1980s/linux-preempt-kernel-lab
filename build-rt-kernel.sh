@@ -112,6 +112,16 @@ echo_status "Enabling RT preemption options..."
 echo_status "Setting timer frequency to 1000 Hz..."
 ./scripts/config --set-val CONFIG_HZ 1000
 
+# Configure RCU subsystem for real-time performance
+echo_status "Configuring RCU subsystem for real-time performance..."
+./scripts/config --disable RCU_EXPERT
+./scripts/config --enable RCU_BOOST
+./scripts/config --set-val RCU_BOOST_DELAY 500
+./scripts/config --enable RCU_NOCB_CPU
+./scripts/config --disable RCU_NOCB_CPU_DEFAULT_ALL
+./scripts/config --enable RCU_NOCB_CPU_CB_BOOST
+./scripts/config --disable RCU_LAZY
+
 # Enable AWS-specific configurations
 echo_status "Enabling AWS-specific configurations..."
 # Elastic Network Adapter (ENA) support - essential for EC2 networking

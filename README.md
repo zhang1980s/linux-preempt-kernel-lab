@@ -88,6 +88,12 @@ scripts/config --enable PREEMPT_RT
 # Set timer frequency to 1000 Hz for better real-time performance
 scripts/config --set-val CONFIG_HZ 1000
 
+# Configure RCU subsystem for real-time performance
+scripts/config --enable RCU_BOOST            # Enable RCU priority boosting
+scripts/config --set-val RCU_BOOST_DELAY 500 # Milliseconds to delay boosting
+scripts/config --enable RCU_NOCB_CPU         # Offload RCU callbacks from boot-selected CPUs
+scripts/config --enable RCU_NOCB_CPU_CB_BOOST # Process callbacks with real-time priority
+
 # AWS-specific configurations for EC2 compatibility
 scripts/config --enable ENA_ETHERNET  # Elastic Network Adapter support
 scripts/config --enable BLK_DEV_NVME  # NVMe storage support
